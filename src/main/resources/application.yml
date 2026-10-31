@@ -1,0 +1,49 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: disputeguard
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/disputeguard}
+    username: ${DATABASE_USERNAME:disputeguard}
+    password: ${DATABASE_PASSWORD:disputeguard}
+  jpa:
+    hibernate:
+      ddl-auto: none   # Flyway owns the schema (src/main/resources/db/migration)
+    open-in-view: false
+  flyway:
+    enabled: true
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: disputeguard
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+paypal:
+  base-url: ${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
+  client-id: ${PAYPAL_CLIENT_ID:}
+  client-secret: ${PAYPAL_CLIENT_SECRET:}
+  webhook-id: ${PAYPAL_WEBHOOK_ID:}
+  # Events sent by PayPal's webhook simulator cannot be signature-verified.
+  # Set to true ONLY for local testing with the simulator; keep false for real sandbox events.
+  skip-webhook-verification: ${PAYPAL_SKIP_WEBHOOK_VERIFICATION:false}
+
+disputeguard:
+  topics:
+    dispute-created: dispute.created
+    dispute-updated: dispute.updated
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
