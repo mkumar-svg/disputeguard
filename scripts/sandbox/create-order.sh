@@ -9,6 +9,14 @@ curl -sS -X POST "$PAYPAL_BASE_URL/v2/checkout/orders" \
   -H "Content-Type: application/json" \
   -d "$(jq -n --arg v "$amount" --arg d "$desc" '{
         intent: "CAPTURE",
-        purchase_units: [{amount: {currency_code: "USD", value: $v}, description: $d}]}')" |
-  jq '{order_id: .id, status, approve_link: ([.links[]? | select(.rel == "approve" or .rel == "payer-action") | .href][0])}'
-echo "Open approve_link, log in as your sandbox PERSONAL account, approve, then run ./capture-order.sh <order_id>"
+        purchase_units: [{amount: {currency_code: "USD", value: $v}, description: $d}],
+        payment_source: {paypal: {experience_context: {
+          brand_name: "DisputeGuard Demo Store",
+          user_action: "PAY_NOW",
+          shipping_preference: "GET_FROM_FILE",
+          return_url: "https://example.com/disputeguard/return",
+          cancel_url: "https://example.com/disputeguard/cancel"
+        }}}}')" |
+  jq '{order_id: .id, status, approve_link: ([.links[]? | select(.rel == "approve" or .rel == "payer-action") | .href][0]), error: .name, details: .details}'
+echo "Open approve_link, log in as your sandbox US PERSONAL account and click Pay."
+echo "When the browser lands on example.com, approval is done: run ./capture-order.sh <order_id>"
