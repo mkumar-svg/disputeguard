@@ -25,14 +25,33 @@ public class Dispute {
 
     private String reason;
     private String status;
+
+    /** Amount the buyer is claiming. */
     private BigDecimal amount;
     private String currency;
+
+    /** Amount of the original payment. */
+    @Column(name = "gross_amount")
+    private BigDecimal grossAmount;
 
     @Column(name = "seller_response_due")
     private OffsetDateTime sellerResponseDue;
 
     @Column(name = "transaction_id")
     private String transactionId;
+
+    @Column(name = "buyer_transaction_id")
+    private String buyerTransactionId;
+
+    @Column(name = "dispute_created_at")
+    private OffsetDateTime disputeCreatedAt;
+
+    @Column(name = "buyer_message")
+    private String buyerMessage;
+
+    /** The demo-store order this dispute is about, once linked. */
+    @Column(name = "order_id")
+    private Long orderId;
 
     @Column(name = "raw_json")
     private String rawJson;
@@ -70,10 +89,20 @@ public class Dispute {
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
+    public BigDecimal getGrossAmount() { return grossAmount; }
+    public void setGrossAmount(BigDecimal grossAmount) { this.grossAmount = grossAmount; }
     public OffsetDateTime getSellerResponseDue() { return sellerResponseDue; }
     public void setSellerResponseDue(OffsetDateTime sellerResponseDue) { this.sellerResponseDue = sellerResponseDue; }
     public String getTransactionId() { return transactionId; }
     public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+    public String getBuyerTransactionId() { return buyerTransactionId; }
+    public void setBuyerTransactionId(String buyerTransactionId) { this.buyerTransactionId = buyerTransactionId; }
+    public OffsetDateTime getDisputeCreatedAt() { return disputeCreatedAt; }
+    public void setDisputeCreatedAt(OffsetDateTime disputeCreatedAt) { this.disputeCreatedAt = disputeCreatedAt; }
+    public String getBuyerMessage() { return buyerMessage; }
+    public void setBuyerMessage(String buyerMessage) { this.buyerMessage = buyerMessage; }
+    public Long getOrderId() { return orderId; }
+    public void setOrderId(Long orderId) { this.orderId = orderId; }
     public String getRawJson() { return rawJson; }
     public void setRawJson(String rawJson) { this.rawJson = rawJson; }
     public OffsetDateTime getCreatedAt() { return createdAt; }

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Creates a sandbox order and prints the link where the sandbox BUYER approves the payment.
 # Usage: ./create-order.sh [amount] [description]
+#
+# The order sets a return URL and "PAY_NOW", so after the buyer clicks Pay, PayPal leaves the checkout
+# page (without a return URL the sandbox checkout can loop back to the same page).
 source "$(dirname "$0")/_env.sh"
 amount="${1:-49.99}"
 desc="${2:-DisputeGuard demo item}"

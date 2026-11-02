@@ -12,11 +12,15 @@ public record DisputeView(
         BigDecimal amount,
         String currency,
         OffsetDateTime sellerResponseDue,
+        OffsetDateTime openedAt,
         String transactionId,
+        Long orderId,
+        String buyerMessage,
         OffsetDateTime updatedAt) {
 
-    static DisputeView from(Dispute d) {
+    public static DisputeView from(Dispute d) {
         return new DisputeView(d.getId(), d.getPaypalDisputeId(), d.getReason(), d.getStatus(),
-                d.getAmount(), d.getCurrency(), d.getSellerResponseDue(), d.getTransactionId(), d.getUpdatedAt());
+                d.getAmount(), d.getCurrency(), d.getSellerResponseDue(), d.getDisputeCreatedAt(),
+                d.getTransactionId(), d.getOrderId(), d.getBuyerMessage(), d.getUpdatedAt());
     }
 }

@@ -1,2 +1,3 @@
+# Keep shell scripts LF so they run in Git Bash / Linux, even after a Windows checkout.
 * text=auto
 *.sh text eol=lf
