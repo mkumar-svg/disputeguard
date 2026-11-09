@@ -6,8 +6,8 @@ Disputes API once the merchant approves.
 
 Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/).
 
-> Status: backend MVP. Webhook intake, Kafka pipeline, dispute sync, demo store, AI agent, evidence
-> pack and approve-and-submit work through the API. The React dashboard is in progress.
+> Status: MVP. Webhook intake, Kafka pipeline, dispute sync, demo store, AI agent, evidence pack,
+> approve-and-submit, and the merchant dashboard all work against the PayPal Sandbox.
 
 ## How it works
 
@@ -68,7 +68,7 @@ simulated shipment and chat for one of three stories: `DELIVERED` (strong case),
 ## Tech stack
 
 Java 21 · Spring Boot 3 · Apache Kafka · Redis · PostgreSQL (Flyway) · Docker Compose ·
-OpenAI-compatible LLM API (Claude / Gemini) · React (dashboard, in progress) · Render (deployment)
+OpenAI-compatible LLM API (Claude / Gemini) · React + Vite (dashboard) · Render (deployment)
 
 ## Run locally
 
@@ -81,7 +81,24 @@ set -a; source .env; set +a
 mvn spring-boot:run                  # app on http://localhost:8081 (PORT in .env)
 ```
 
-Check it is up: `curl localhost:8081/actuator/health`
+Check it is up: `curl localhost:8081/actuator/health`. On Windows/Git Bash, `./scripts/start.sh` does all
+of the above in one go.
+
+### Dashboard
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173, API calls go to the app on :8081
+```
+
+`npm run build` puts the dashboard into the Spring Boot app, which then serves it at
+http://localhost:8081. The Docker image builds it automatically.
+
+The dashboard shows the dispute inbox; for each case the win-chance scale (rules score vs. final
+score), the evidence checklist, the agent's tool calls and guardrail checks, the order timeline
+(payment, tracking scans, buyer messages), and an editable note with a two-step Approve. A Demo store
+tab places sandbox orders for each evidence story.
 
 End-to-end walkthrough (sandbox purchase → dispute → AI pack → submit): [docs/DEMO.md](docs/DEMO.md).
 Sandbox setup and troubleshooting: [docs/SANDBOX_TESTING.md](docs/SANDBOX_TESTING.md).

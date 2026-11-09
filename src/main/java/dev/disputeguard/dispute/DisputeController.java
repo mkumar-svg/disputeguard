@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -82,10 +83,19 @@ public class DisputeController {
         return out;
     }
 
-    /** Build (or rebuild) the evidence pack with the AI agent. */
+    /**
+     * Build (or rebuild) the evidence pack with the AI agent. With {@code ?preview=true} it is a dry
+     * run: nothing is saved, and it also works on a dispute that was already answered.
+     */
     @PostMapping("/{paypalDisputeId}/analyze")
-    public DisputeDetails analyze(@PathVariable String paypalDisputeId) throws Exception {
+    public DisputeDetails analyze(@PathVariable String paypalDisputeId,
+                                  @RequestParam(defaultValue = "false") boolean preview) throws Exception {
         Dispute d = sync.sync(paypalDisputeId);
+        if (preview) {
+            DisputeDetails current = details(d);
+            return new DisputeDetails(current.dispute(), current.order(),
+                    EvidencePackView.from(evidence.preview(d), mapper), current.availableActions());
+        }
         evidence.generate(d);
         return details(d);
     }

@@ -50,9 +50,26 @@ public class EvidencePackService {
     public EvidencePack generate(Dispute dispute) throws Exception {
         java.util.Optional<EvidencePack> existing = latest(dispute);
         if (existing.isPresent() && EvidencePack.SUBMITTED.equals(existing.get().getStatus())) {
+            log.info("Dispute {} was already answered; keeping the submitted pack", dispute.getPaypalDisputeId());
             return existing.get();
         }
+        EvidencePack pack = existing.orElseGet(() -> new EvidencePack(dispute.getId()));
+        fill(pack, dispute);
+        return packs.save(pack);
+    }
 
+    /**
+     * Runs the checklist and the agent without saving anything: a dry run that also works on a
+     * dispute that was already answered (useful for testing the LLM and for the demo).
+     */
+    public EvidencePack preview(Dispute dispute) throws Exception {
+        EvidencePack pack = new EvidencePack(dispute.getId());
+        fill(pack, dispute);
+        pack.setStatus("PREVIEW");
+        return pack;
+    }
+
+    private void fill(EvidencePack pack, Dispute dispute) throws Exception {
         OrderDetails order = orders.byId(dispute.getOrderId()).orElse(null);
         List<ChecklistItem> items = checklist.build(dispute, order);
         double base = checklist.baseProbability(items);
@@ -77,7 +94,6 @@ public class EvidencePackService {
             refund = dispute.getAmount().multiply(new BigDecimal("0.5")).setScale(2, RoundingMode.HALF_UP);
         }
 
-        EvidencePack pack = existing.orElseGet(() -> new EvidencePack(dispute.getId()));
         pack.setStatus(EvidencePack.READY);
         pack.setReasonSummary(result.reasonSummary());
         pack.setChecklist(mapper.writeValueAsString(items));
@@ -91,10 +107,8 @@ public class EvidencePackService {
         pack.setAgentTrace(mapper.writeValueAsString(result.steps()));
         pack.setModel(result.model());
         pack.setSubmitResponse(null);
-        EvidencePack saved = packs.save(pack);
         log.info("Evidence pack for {}: base={} final={} -> {} (model {})", dispute.getPaypalDisputeId(),
                 base, finalP, rec, result.model());
-        return saved;
     }
 
     /** The pack without an LLM: a factual note assembled from the checklist. */
