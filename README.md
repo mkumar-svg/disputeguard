@@ -128,7 +128,7 @@ Sandbox setup and troubleshooting: [docs/SANDBOX_TESTING.md](docs/SANDBOX_TESTIN
 | `PAYPAL_BASE_URL` | `https://api-m.sandbox.paypal.com` | |
 | `PAYPAL_SKIP_WEBHOOK_VERIFICATION` | `false` | `true` only for local tests without a registered webhook |
 | `LLM_BASE_URL` | `https://api.anthropic.com/v1` | Any OpenAI-compatible endpoint |
-| `LLM_MODEL` | `claude-sonnet-5-5` | e.g. `gemini-2.5-flash` with the Gemini base URL |
+| `LLM_MODEL` | `claude-sonnet-5-5` | e.g. `gemini-3.8-flash` with the Gemini base URL |
 | `LLM_API_KEY` | — | Empty = rule-based packs, no AI |
 | `PORT` | `8080` | |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Dashboard origin(s), comma-separated |

@@ -19,8 +19,9 @@ import org.springframework.stereotype.Component;
 /**
  * Minimal client for an OpenAI-compatible /chat/completions endpoint with tool calling.
  * Uses the JDK HttpClient directly so status, body and network errors are all handled here.
- * Busy providers (429/5xx), network failures and unreadable responses are retried; if the main
- * model stays busy, the optional fallback model is tried.
+ * Busy providers (429/5xx), network failures and unreadable responses are retried with a short
+ * backoff; if the main model stays busy, the optional fallback model is tried.
+ * Sends no temperature and no response_format: some providers reject them.
  */
 @Component
 public class LlmClient {
@@ -43,10 +44,12 @@ public class LlmClient {
         this.endpoint = base + "/chat/completions";
     }
 
+    /** The model that answered the most recent call (the fallback model if the main one was busy). */
     public String model() {
         return lastModel;
     }
 
+    /** One chat-completions round trip. Returns {@code choices[0].message}. */
     public JsonNode chat(ArrayNode messages, ArrayNode tools) {
         List<String> models = new ArrayList<>();
         models.add(props.model());
@@ -54,6 +57,7 @@ public class LlmClient {
                 && !props.fallbackModel().equals(props.model())) {
             models.add(props.fallbackModel());
         }
+
         RuntimeException last = null;
         for (String model : models) {
             for (int attempt = 0; attempt <= BACKOFF_MS.length; attempt++) {
@@ -69,7 +73,8 @@ public class LlmClient {
                     sleep(BACKOFF_MS[attempt]);
                 }
             }
-            log.warn("LLM {} still failing after retries", model);
+            log.warn("LLM {} still failing after retries{}", model,
+                    models.size() > 1 ? ", trying the next model" : "");
         }
         throw last;
     }
@@ -83,6 +88,7 @@ public class LlmClient {
             body.set("tools", tools);
             body.put("tool_choice", "auto");
         }
+
         HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint))
                 .timeout(Duration.ofSeconds(Math.max(10, props.timeoutSeconds())))
                 .header("Authorization", "Bearer " + props.apiKey())
@@ -103,14 +109,16 @@ public class LlmClient {
 
         int status = response.statusCode();
         String raw = response.body() == null ? "" : response.body();
-        String snippet = raw.length() > 400 ? raw.substring(0, 400) + "..." : raw;
+        String snippet = raw.length() > 400 ? raw.substring(0, 400) + "…" : raw;
 
         if (status == 429 || status >= 500) {
             throw new RetryableLlmException("HTTP " + status + ": " + snippet, null);
         }
         if (status < 200 || status >= 300) {
+            // Bad key, unknown model, bad request: retrying will not help.
             throw new IllegalStateException("LLM returned HTTP " + status + ": " + snippet);
         }
+
         JsonNode res;
         try {
             res = raw.isBlank() ? null : mapper.readTree(raw);
@@ -132,6 +140,7 @@ public class LlmClient {
         }
     }
 
+    /** A failure worth retrying: busy provider, network trouble, or an unreadable response. */
     static class RetryableLlmException extends RuntimeException {
         RetryableLlmException(String message, Throwable cause) {
             super(message, cause);

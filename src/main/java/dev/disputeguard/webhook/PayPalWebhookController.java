@@ -4,15 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.disputeguard.config.PayPalProperties;
 import dev.disputeguard.config.TopicProperties;
+import dev.disputeguard.events.DisputeEventPublisher;
 import dev.disputeguard.paypal.PayPalClient;
 import dev.disputeguard.paypal.WebhookHeaders;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -31,17 +30,17 @@ public class PayPalWebhookController {
     private final PayPalClient paypal;
     private final PayPalProperties props;
     private final TopicProperties topics;
-    private final KafkaTemplate<String, String> kafka;
+    private final DisputeEventPublisher events;
     private final StringRedisTemplate redis;
     private final ObjectMapper mapper;
 
     public PayPalWebhookController(PayPalClient paypal, PayPalProperties props, TopicProperties topics,
-                                   KafkaTemplate<String, String> kafka, StringRedisTemplate redis,
+                                   DisputeEventPublisher events, StringRedisTemplate redis,
                                    ObjectMapper mapper) {
         this.paypal = paypal;
         this.props = props;
         this.topics = topics;
-        this.kafka = kafka;
+        this.events = events;
         this.redis = redis;
         this.mapper = mapper;
     }
@@ -91,7 +90,7 @@ public class PayPalWebhookController {
         // 4. Publish, keyed by dispute id so all events of one dispute stay in order.
         String disputeId = event.path("resource").path("dispute_id").asText(eventId);
         try {
-            kafka.send(topic, disputeId, rawBody).get(5, TimeUnit.SECONDS);
+            events.publish(topic, disputeId, rawBody);
         } catch (Exception e) {
             // Let PayPal retry: forget the event and answer with an error.
             redis.delete(dedupeKey);

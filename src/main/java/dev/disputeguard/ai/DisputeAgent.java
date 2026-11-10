@@ -195,7 +195,7 @@ public class DisputeAgent {
             case "get_tracking" -> order.shipment() == null ? "No shipment on file"
                     : order.shipment().carrier() + " " + order.shipment().trackingNo()
                             + (order.shipment().deliveredAt() != null ? ", delivered" : ", not delivered");
-            case "get_chat_logs" -> order.messages().size() + " messages";
+            case "get_chat_logs" -> order.messages().size() + (order.messages().size() == 1 ? " message" : " messages");
             default -> tool;
         };
     }

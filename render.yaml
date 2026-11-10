@@ -1,0 +1,52 @@
+# Render Blueprint: the app (Docker, serves API + dashboard), Postgres and Key Value (Redis).
+# Render has no managed Kafka, so the hosted demo processes webhooks in-process (EVENTS_MODE=inline);
+# the local Docker Compose setup runs the full Kafka pipeline.
+services:
+  - type: web
+    name: disputeguard
+    runtime: docker
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: EVENTS_MODE
+        value: inline
+      - key: SPRING_KAFKA_ADMIN_AUTO_CREATE
+        value: "false"
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=70
+      - key: DATABASE_URL
+        fromDatabase:
+          name: disputeguard-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: disputeguard-redis
+          property: connectionString
+      - key: PAYPAL_BASE_URL
+        value: https://api-m.sandbox.paypal.com
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: PAYPAL_SKIP_WEBHOOK_VERIFICATION
+        value: "false"
+      - key: LLM_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai
+      - key: LLM_MODEL
+        value: gemini-3.5-flash
+      - key: LLM_FALLBACK_MODEL
+        value: gemini-3.5-flash-lite
+      - key: LLM_API_KEY
+        sync: false
+
+  - type: keyvalue
+    name: disputeguard-redis
+    plan: free
+    ipAllowList: []   # reachable only from Render services in this account
+
+databases:
+  - name: disputeguard-db
+    plan: free
