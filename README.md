@@ -13,17 +13,25 @@ Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/).
 
 ```
 PayPal Sandbox ──webhook──▶ Webhook receiver ──▶ Kafka (dispute.created / dispute.updated)
-                            verify signature              │
-                            dedupe in Redis               ▼
+                            verify signature     (hosted demo: in-process queue)
+                            dedupe in Redis               │
+                                                          ▼
                                                 Enrichment worker ── sync dispute, link its order
                                                           │
                                                           ▼
-                                   Evidence checklist (rules) ──▶ AI agent (tool calls)
+                                   Evidence checklist (rules) ──▶ AI agent (Gemini, tool calls)
                                    base win chance                summary, ±0.15 adjustment, note
+                                                          │       (falls back to rules if AI fails)
+                                                          ▼
+                                              Postgres: evidence pack (READY)
                                                           │
                                                           ▼
 Merchant reviews & approves ──▶ Submit service ──▶ PayPal provide-evidence / make-offer / accept-claim
 ```
+
+Locally, Docker Compose runs the full Kafka pipeline (`EVENTS_MODE=kafka`). The hosted demo on
+Render has no managed Kafka, so it runs with `EVENTS_MODE=inline`: verified webhooks are processed
+in-process on a background thread. Everything after the queue is the same code in both modes.
 
 The AI never writes to PayPal on its own: every `provide-evidence`, `accept-claim` or `make-offer`
 call needs the merchant's approval.
